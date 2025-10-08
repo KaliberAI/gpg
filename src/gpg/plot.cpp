@@ -1,4 +1,5 @@
 #include <gpg/plot.h>
+#include <sstream>
 
 
 void Plot::plotFingers3D(const std::vector<GraspSet>& hand_set_list, const PointCloudRGBA::Ptr& cloud,
@@ -24,8 +25,9 @@ void Plot::plotFingers3D(const std::vector<GraspSet>& hand_set_list, const Point
 void Plot::plotFingers3D(const std::vector<Grasp>& hand_list, const PointCloudRGBA::Ptr& cloud,
   std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height) const
 {
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer(str);
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer(str);
 
+  plotCoordinateFrame(viewer, Eigen::Vector3d(0, 0, 0), Eigen::Matrix3d::Identity(), 0.05, "origin");
   for (int i = 0; i < hand_list.size(); i++)
   {
     plotHand3D(viewer, hand_list[i], outer_diameter, finger_width, hand_depth, hand_height, i);
@@ -38,9 +40,7 @@ void Plot::plotFingers3D(const std::vector<Grasp>& hand_list, const PointCloudRG
   runViewer(viewer);
 }
 
-
-
-void Plot::plotHand3D(boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer, const Grasp& hand,
+void Plot::plotHand3D(pcl::visualization::PCLVisualizer::Ptr& viewer, const Grasp& hand,
   double outer_diameter, double finger_width, double hand_depth, double hand_height, int idx) const
 {
   double hw = 0.5*outer_diameter;
@@ -56,7 +56,9 @@ void Plot::plotHand3D(boost::shared_ptr<pcl::visualization::PCLVisualizer>& view
 
   Eigen::Quaterniond quat(hand.getFrame());
 
-  std::string num = boost::lexical_cast<std::string>(idx);
+  std::stringstream ss;
+  ss << idx;
+  std::string num = ss.str();
 
   plotCube(viewer, left_center, quat, hand_depth, finger_width, hand_height, "left_finger_" + num);
   plotCube(viewer, right_center, quat, hand_depth, finger_width, hand_height, "right_finger_" + num);
@@ -64,8 +66,7 @@ void Plot::plotHand3D(boost::shared_ptr<pcl::visualization::PCLVisualizer>& view
   plotCube(viewer, approach_center, quat, approach_depth, finger_width, 0.5*hand_height, "approach_" + num);
 }
 
-
-void Plot::plotCube(boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer, const Eigen::Vector3d& position,
+void Plot::plotCube(pcl::visualization::PCLVisualizer::Ptr& viewer, const Eigen::Vector3d& position,
   const Eigen::Quaterniond& rotation, double width, double height, double depth, const std::string& name) const
 {
   viewer->addCube(position.cast<float>(), rotation.cast<float>(), width, height, depth, name);
@@ -74,6 +75,25 @@ void Plot::plotCube(boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer
   viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.4, name);
 }
 
+void Plot::plotCoordinateFrame(pcl::visualization::PCLVisualizer::Ptr& viewer, 
+  const Eigen::Vector3d& origin, const Eigen::Matrix3d& rotation, 
+  double scale, const std::string& id) const
+{
+  // Create affine transformation for the coordinate frame
+  Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+  transform.translation() << origin(0), origin(1), origin(2);
+  transform.rotate(rotation.cast<float>());
+  
+  // Add coordinate system at the specified pose
+  viewer->addCoordinateSystem(scale, transform, id);
+  
+  // Optionally add a small sphere at the origin
+  pcl::PointXYZ origin_point;
+  origin_point.x = origin(0);
+  origin_point.y = origin(1);
+  origin_point.z = origin(2);
+  viewer->addSphere(origin_point, scale * 0.05, 1.0, 1.0, 0.0, id + "_origin");
+}
 
 void Plot::plotFingers(const std::vector<GraspSet>& hand_set_list, const PointCloudRGBA::Ptr& cloud,
   std::string str, double outer_diameter) const
@@ -100,7 +120,7 @@ void Plot::plotFingers(const std::vector<Grasp>& hand_list, const PointCloudRGBA
 {
   const int WIDTH = pcl::visualization::PCL_VISUALIZER_LINE_WIDTH;
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer(str);
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer(str);
 
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud);
   viewer->addPointCloud<pcl::PointXYZRGBA>(cloud, rgb, "cloud");
@@ -205,7 +225,7 @@ void Plot::plotSamples(const Eigen::Matrix3Xd& samples, const PointCloudRGBA::Pt
 
 void Plot::plotSamples(const PointCloudRGBA::Ptr& samples_cloud, const PointCloudRGBA::Ptr& cloud) const
 {
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Samples");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Samples");
 
   // draw the point cloud
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud);
@@ -257,12 +277,16 @@ void Plot::plotNormals(const CloudCamera& cloud_cam)
   double normal_colors[6][3] = {{0.5, 0.0, 0.0}, {0.0, 0.5, 0.0}, {0.0, 0.0, 0.5}, {0.5, 0.5, 0.0}, {0.5, 0.0, 0.5},
     {0.0, 0.5, 0.5}};
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Normals");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Normals");
   viewer->setBackgroundColor(0.1, 0.1, 0.1);
   for (int i = 0; i < num_clouds; i++)
   {
-    std::string cloud_name = "cloud_" + boost::lexical_cast<std::string>(i);
-    std::string normals_name = "normals_" + boost::lexical_cast<std::string>(i);
+    std::stringstream ss_cloud, ss_normals;
+    ss_cloud << "cloud_" << i;
+    ss_normals << "normals_" << i;
+    std::string cloud_name = ss_cloud.str();
+    std::string normals_name = ss_normals.str();
+    
     int color_id = i % 6;
     viewer->addPointCloud<pcl::PointNormal>(clouds[i], cloud_name);
     viewer->addPointCloudNormals<pcl::PointNormal>(clouds[i], 1, 0.01, normals_name);
@@ -287,7 +311,11 @@ void Plot::plotNormals(const CloudCamera& cloud_cam)
     coeffs.values.push_back(cone_dir(1));
     coeffs.values.push_back(cone_dir(2));
     coeffs.values.push_back(20.0);
-    std::string cone_name = "cam" + boost::lexical_cast<std::string>(i);
+    
+    std::stringstream ss_cone;
+    ss_cone << "cam" << i;
+    std::string cone_name = ss_cone.str();
+    
     viewer->addCone(coeffs, cone_name, 0);
     viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, normal_colors[color_id][0],
       normal_colors[color_id][1], normal_colors[color_id][2], cone_name);
@@ -316,7 +344,7 @@ void Plot::plotNormals(const PointCloudRGBA::Ptr& cloud, const PointCloudRGBA::P
   double red[3] = {1.0, 0.0, 0.0};
   double blue[3] = {0.0, 0.0, 1.0};
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Normals");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Normals");
 
   // draw the point cloud
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud);
@@ -348,7 +376,7 @@ void Plot::plotNormals(const PointCloudRGBA::Ptr& cloud, const Eigen::Matrix3Xd&
   double red[3] = {1.0, 0.0, 0.0};
   double blue[3] = {0.0, 0.0, 1.0};
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Normals");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Normals");
 
   // draw the point cloud
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud);
@@ -380,7 +408,7 @@ void Plot::plotNormals(const Eigen::Matrix3Xd& pts, const Eigen::Matrix3Xd& norm
   double red[3] = {1.0, 0.0, 0.0};
   double blue[3] = {0.0, 0.0, 1.0};
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Normals");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Normals");
   addCloudNormalsToViewer(viewer, normals_cloud, 2, blue, red, std::string("cloud"), std::string("normals"));
   runViewer(viewer);
 }
@@ -388,7 +416,7 @@ void Plot::plotNormals(const Eigen::Matrix3Xd& pts, const Eigen::Matrix3Xd& norm
 
 void Plot::plotLocalAxes(const std::vector<LocalFrame>& quadric_list, const PointCloudRGBA::Ptr& cloud) const
 {
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Local Axes");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Local Axes");
   viewer->addPointCloud<pcl::PointXYZRGBA>(cloud, "registered point cloud");
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1,
     "registered point cloud");
@@ -413,7 +441,7 @@ void Plot::plotCameraSource(const Eigen::VectorXi& pts_cam_source_in, const Poin
       right_cloud->points.push_back(cloud->points[i]);
   }
 
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer("Camera Sources");
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer("Camera Sources");
   viewer->addPointCloud<pcl::PointXYZRGBA>(left_cloud, "left point cloud");
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1,
     "left point cloud");
@@ -428,7 +456,7 @@ void Plot::plotCameraSource(const Eigen::VectorXi& pts_cam_source_in, const Poin
 }
 
 
-void Plot::addCloudNormalsToViewer(boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer,
+void Plot::addCloudNormalsToViewer(pcl::visualization::PCLVisualizer::Ptr& viewer,
   const PointCloudPointNormal::Ptr& cloud, double line_width, double* color_cloud,
   double* color_normals, const std::string& cloud_name, const std::string& normals_name) const
 {
@@ -445,25 +473,23 @@ void Plot::addCloudNormalsToViewer(boost::shared_ptr<pcl::visualization::PCLVisu
 }
 
 
-void Plot::runViewer(boost::shared_ptr<pcl::visualization::PCLVisualizer>& viewer) const
+void Plot::runViewer(pcl::visualization::PCLVisualizer::Ptr& viewer) const
 {
-  while (!viewer->wasStopped())
-  {
-    viewer->spinOnce(100);
-    boost::this_thread::sleep(boost::posix_time::microseconds(100000));
-  }
-
-  viewer->close();
+  // Use the modern PCL 1.12 approach for running the viewer
+  viewer->spin();
 }
 
 
-boost::shared_ptr<pcl::visualization::PCLVisualizer> Plot::createViewer(std::string title) const
+pcl::visualization::PCLVisualizer::Ptr Plot::createViewer(std::string title) const
 {
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer(title));  
+  pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer(title));  
   viewer->setPosition(0, 0);
   viewer->setSize(640, 480);
   viewer->setBackgroundColor(1.0, 1.0, 1.0);
 
+  // Comment out the hardcoded camera parameters that might be causing issues in PCL 1.12
+  // If you need specific camera positioning, you can uncomment and adjust these parameters
+  /*
   pcl::visualization::Camera camera;
   camera.clip[0] = 0.00130783;
   camera.clip[1] = 1.30783;
@@ -482,6 +508,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> Plot::createViewer(std::str
   camera.window_size[0] = 640;
   camera.window_size[1] = 480;
   viewer->setCameraParameters(camera);
+  */
 
   return viewer;
 }
@@ -489,7 +516,7 @@ boost::shared_ptr<pcl::visualization::PCLVisualizer> Plot::createViewer(std::str
 
 void Plot::plotCloud(const PointCloudRGBA::Ptr& cloud_rgb, const std::string& title) const
 {
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer = createViewer(title);
+  pcl::visualization::PCLVisualizer::Ptr viewer = createViewer(title);
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud_rgb);
   viewer->addPointCloud<pcl::PointXYZRGBA>(cloud_rgb, rgb, "registered point cloud");
   viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "registered point cloud");

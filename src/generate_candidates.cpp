@@ -128,8 +128,19 @@ int main(int argc, char* argv[])
   // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
   candidates_generator.preprocessPointCloud(cloud_cam);
 
+  std::cout << "Generating grasp candidates...\n";
+
   // Generate a list of grasp candidates.
   std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
+  std::cout << "Generated " << candidates.size() << " grasp candidates.\n";
+
+  std::cout << "Saving grasp candidates to file...\n";
+  if (!candidates.empty()) {
+    candidates[0].writeHandsToFile("grasp_candidates.txt", candidates);
+  }
+  for (int i = 0; i < candidates.size(); i++) {
+    candidates[i].print();
+  }
 
   return 0;
 }
