@@ -84,6 +84,8 @@ public:
     Eigen::Matrix4d cam_tf_left_; ///< pose of the left camera
     Eigen::Matrix4d cam_tf_right_; ///< pose of the right camera
     int num_orientations_; ///< number of hand orientations to evaluate
+    double min_range_; ///< the minimum range of the hand orientations
+    double max_range_; ///< the maximum range of the hand orientations
     int rotation_axis_; ///< the rotation axis about which different hand orientations are generated
 
     /** robot hand geometry */
@@ -92,6 +94,8 @@ public:
     double hand_depth_; ///< the hand depth (length of fingers)
     double hand_height_; ///< the hand extends plus/minus this value along the hand axis
     double init_bite_; ///< the minimum object height
+    double base_depth_; ///< the length of the base of the hand
+    double approach_depth_; ///< the length of the stem of the hand
   };
 
   /**

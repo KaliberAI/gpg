@@ -69,24 +69,26 @@ void Grasp::calculateGraspPositions(const FingerHand& finger_hand)
 }
 
 
-void Grasp::writeHandsToFile(const std::string& filename, const std::vector<Grasp>& hands) const
+void Grasp::writeHandsToFile(const std::string& filename, const std::vector<Grasp>& hands)
 {
   std::ofstream myfile;
-  myfile.open (filename.c_str());
+  myfile.open(filename.c_str());
 
   for (int i = 0; i < hands.size(); i++)
   {
     std::cout << "Hand " << i << std::endl;
-    print();
+    hands[i].print();
 
-    myfile << vectorToString(hands[i].getGraspBottom()) << vectorToString(hands[i].getGraspSurface())
-          << vectorToString(hands[i].getAxis()) << vectorToString(hands[i].getApproach())
-          << vectorToString(hands[i].getBinormal()) << boost::lexical_cast<double>(hands[i].getGraspWidth()) << "\n";
+    myfile << hands[i].vectorToString(hands[i].getGraspBottom()) 
+           << hands[i].vectorToString(hands[i].getGraspSurface())
+           << hands[i].vectorToString(hands[i].getAxis()) 
+           << hands[i].vectorToString(hands[i].getApproach())
+           << hands[i].vectorToString(hands[i].getBinormal()) 
+           << boost::lexical_cast<std::string>(hands[i].getGraspWidth()) << "\n";
   }
 
   myfile.close();
 }
-
 
 void Grasp::print() const
 {

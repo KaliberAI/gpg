@@ -3,7 +3,7 @@
 
 
 void Plot::plotFingers3D(const std::vector<GraspSet>& hand_set_list, const PointCloudRGBA::Ptr& cloud,
-  std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height) const
+  std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth) const
 {
   std::vector<Grasp> hands;
 
@@ -18,19 +18,20 @@ void Plot::plotFingers3D(const std::vector<GraspSet>& hand_set_list, const Point
     }
   }
 
-  plotFingers3D(hands, cloud, str, outer_diameter, finger_width, hand_depth, hand_height);
+  plotFingers3D(hands, cloud, str, outer_diameter, finger_width, hand_depth, hand_height, base_depth, approach_depth);
 }
 
 
 void Plot::plotFingers3D(const std::vector<Grasp>& hand_list, const PointCloudRGBA::Ptr& cloud,
-  std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height) const
+  std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth) const
 {
   pcl::visualization::PCLVisualizer::Ptr viewer = createViewer(str);
 
   plotCoordinateFrame(viewer, Eigen::Vector3d(0, 0, 0), Eigen::Matrix3d::Identity(), 0.05, "origin");
+
   for (int i = 0; i < hand_list.size(); i++)
   {
-    plotHand3D(viewer, hand_list[i], outer_diameter, finger_width, hand_depth, hand_height, i);
+    plotHand3D(viewer, hand_list[i], outer_diameter, finger_width, hand_depth, hand_height, base_depth, approach_depth, i);
   }
 
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGBA> rgb(cloud);
@@ -41,11 +42,9 @@ void Plot::plotFingers3D(const std::vector<Grasp>& hand_list, const PointCloudRG
 }
 
 void Plot::plotHand3D(pcl::visualization::PCLVisualizer::Ptr& viewer, const Grasp& hand,
-  double outer_diameter, double finger_width, double hand_depth, double hand_height, int idx) const
+  double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth, int idx) const
 {
   double hw = 0.5*outer_diameter;
-  double base_depth = 0.02;
-  double approach_depth = 0.07;
 
   Eigen::Vector3d left_bottom = hand.getGraspBottom() - (hw - 0.5 * finger_width) * hand.getBinormal();
   Eigen::Vector3d right_bottom = hand.getGraspBottom() + (hw - 0.5 * finger_width) * hand.getBinormal();
@@ -64,6 +63,7 @@ void Plot::plotHand3D(pcl::visualization::PCLVisualizer::Ptr& viewer, const Gras
   plotCube(viewer, right_center, quat, hand_depth, finger_width, hand_height, "right_finger_" + num);
   plotCube(viewer, base_center, quat, base_depth, outer_diameter, hand_height, "base_" + num);
   plotCube(viewer, approach_center, quat, approach_depth, finger_width, 0.5*hand_height, "approach_" + num);
+  plotCoordinateFrame(viewer, hand.getGraspSurface(), hand.getFrame(), 0.05, "grasp_surface_" + num);
 }
 
 void Plot::plotCube(pcl::visualization::PCLVisualizer::Ptr& viewer, const Eigen::Vector3d& position,

@@ -32,11 +32,12 @@ std::vector<double> stringToDouble(const std::string& str)
 int main(int argc, char* argv[])
 {
   // Read arguments from command line.
-  if (argc < 3)
+  if (argc < 2)
   {
     std::cout << "Error: Not enough input arguments!\n\n";
-    std::cout << "Usage: generate_candidates [CONFIG_FILE] [PCD_FILE] [NORMALS_FILE]\n\n";
+    std::cout << "Usage: generate_candidates [CONFIG_FILE] [PCD_FILE] [GRASP_CANDIDATES_FILE] [NORMALS_FILE]\n\n";
     std::cout << "Generate grasp candidates for a point cloud, PCD_FILE (*.pcd), using parameters from CONFIG_FILE (*.cfg).\n\n";
+    std::cout << "[GRASP_CANDIDATES_FILE] (optional) contains a grasp candidates file (*.txt).\n";
     std::cout << "[NORMALS_FILE] (optional) contains a surface normal for each point in the cloud (*.csv).\n";
     return (-1);
   }
@@ -46,12 +47,16 @@ int main(int argc, char* argv[])
 
   double finger_width = config_file.getValueOfKey<double>("finger_width", 0.01);
   double hand_outer_diameter  = config_file.getValueOfKey<double>("hand_outer_diameter", 0.12);
+  double base_depth = config_file.getValueOfKey<double>("base_depth", 0.02);
+  double approach_depth = config_file.getValueOfKey<double>("approach_depth", 0.07);
   double hand_depth = config_file.getValueOfKey<double>("hand_depth", 0.06);
   double hand_height  = config_file.getValueOfKey<double>("hand_height", 0.02);
   double init_bite  = config_file.getValueOfKey<double>("init_bite", 0.01);
 
   std::cout << "finger_width: " << finger_width << "\n";
   std::cout << "hand_outer_diameter: " << hand_outer_diameter << "\n";
+  std::cout << "base_depth: " << base_depth << "\n";
+  std::cout << "approach_depth: " << approach_depth << "\n";
   std::cout << "hand_depth: " << hand_depth << "\n";
   std::cout << "hand_height: " << hand_height << "\n";
   std::cout << "init_bite: " << init_bite << "\n";
@@ -71,11 +76,15 @@ int main(int argc, char* argv[])
   int num_threads = config_file.getValueOfKey<int>("num_threads", 1);
   double nn_radius = config_file.getValueOfKey<double>("nn_radius", 0.01);
   int num_orientations = config_file.getValueOfKey<int>("num_orientations", 8);
+  double min_range = config_file.getValueOfKey<double>("min_range", -0.5236);
+  double max_range = config_file.getValueOfKey<double>("max_range", 0.5236);
   int rotation_axis = config_file.getValueOfKey<int>("rotation_axis", 2);
   std::cout << "num_samples: " << num_samples << "\n";
   std::cout << "num_threads: " << num_threads << "\n";
   std::cout << "nn_radius: " << nn_radius << "\n";
   std::cout << "num_orientations: " << num_orientations << "\n";
+  std::cout << "min_range: " << min_range << "\n";
+  std::cout << "max_range: " << max_range << "\n";
   std::cout << "rotation_axis: " << rotation_axis << "\n";
 
   bool plot_grasps = config_file.getValueOfKey<bool>("plot_grasps", true);
@@ -95,11 +104,15 @@ int main(int argc, char* argv[])
   HandSearch::Parameters hand_search_params;
   hand_search_params.finger_width_ = finger_width;
   hand_search_params.hand_outer_diameter_ = hand_outer_diameter;
+  hand_search_params.base_depth_ = base_depth;
+  hand_search_params.approach_depth_ = approach_depth;
   hand_search_params.hand_depth_ = hand_depth;
   hand_search_params.hand_height_ = hand_height;
   hand_search_params.init_bite_ = init_bite;
   hand_search_params.nn_radius_frames_ = nn_radius;
   hand_search_params.num_orientations_ = num_orientations;
+  hand_search_params.min_range_ = min_range;
+  hand_search_params.max_range_ = max_range;
   hand_search_params.num_samples_ = num_samples;
   hand_search_params.num_threads_ = num_threads;
   hand_search_params.rotation_axis_ = rotation_axis;
@@ -117,30 +130,39 @@ int main(int argc, char* argv[])
     return (-1);
   }
 
-  // Load surface normals from file.
-  std::cout << argc << "\n";
-  if (argc > 3)
-  {
-    cloud_cam.setNormalsFromFile(argv[3]);
-    std::cout << "Loaded surface normals from file.\n";
-  }
+// Load surface normals from file.
+std::cout << argc << "\n";
+if (argc > 4)
+{
+  cloud_cam.setNormalsFromFile(argv[4]);
+  std::cout << "Loaded surface normals from file.\n";
+}
 
-  // Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
-  candidates_generator.preprocessPointCloud(cloud_cam);
+// Point cloud preprocessing: voxelize, remove statistical outliers, workspace filter, compute normals, subsample.
+candidates_generator.preprocessPointCloud(cloud_cam);
 
-  std::cout << "Generating grasp candidates...\n";
+std::cout << "Generating grasp candidates...\n";
 
-  // Generate a list of grasp candidates.
-  std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
-  std::cout << "Generated " << candidates.size() << " grasp candidates.\n";
+// Generate a list of grasp candidates.
+std::vector<Grasp> candidates = candidates_generator.generateGraspCandidates(cloud_cam);
 
-  std::cout << "Saving grasp candidates to file...\n";
-  if (!candidates.empty()) {
-    candidates[0].writeHandsToFile("grasp_candidates.txt", candidates);
-  }
-  for (int i = 0; i < candidates.size(); i++) {
-    candidates[i].print();
-  }
+if (candidates.empty()) {
+  std::cout << "No grasp candidates found!\n";
+  return (-1);
+}
 
-  return 0;
+std::cout << "Saving " << candidates.size() << " grasp candidates to file...\n";
+
+// Check if output filename argument exists
+if (argc > 3) {
+  Grasp::writeHandsToFile(argv[3], candidates);
+} else {
+  std::cout << "No output filename provided. Skipping file save.\n";
+}
+
+for (int i = 0; i < candidates.size(); i++) {
+  candidates[i].print();
+}
+
+return 0;
 }

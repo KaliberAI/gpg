@@ -145,7 +145,7 @@ std::vector<Grasp> CandidatesGenerator::generateGraspCandidates(const CloudCamer
     try {
       const HandSearch::Parameters& params = hand_search_->getParams();
       plotter_.plotFingers3D(candidates, cloud_cam.getCloudOriginal(), "Grasp Candidates", params.hand_outer_diameter_,
-      params.finger_width_, params.hand_depth_, params.hand_height_);
+      params.finger_width_, params.hand_depth_, params.hand_height_, params.base_depth_, params.approach_depth_);
     } catch (const std::exception& e) {
       std::cout << "Warning: Plotting failed: " << e.what() << "\n";
     } catch (...) {
@@ -166,7 +166,7 @@ std::vector<GraspSet> CandidatesGenerator::generateGraspCandidateSets(const Clou
   {
     const HandSearch::Parameters& params = hand_search_->getParams();
     plotter_.plotFingers3D(hand_set_list, cloud_cam.getCloudOriginal(), "Grasp Candidates", params.hand_outer_diameter_,
-      params.finger_width_, params.hand_depth_, params.hand_height_);
+      params.finger_width_, params.hand_depth_, params.hand_height_, params.base_depth_, params.approach_depth_);
   }
 
   return hand_set_list;

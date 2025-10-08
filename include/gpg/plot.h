@@ -70,7 +70,7 @@ class Plot
     * \param hand_height the height of the robot hand
     */
     void plotFingers3D(const std::vector<GraspSet>& hand_set_list, const PointCloudRGBA::Ptr& cloud,
-      std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height) const;
+      std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth) const;
 
     /**
     * \brief Plot a list of grasps with 3D cubes.
@@ -83,7 +83,7 @@ class Plot
     * \param hand_height the height of the robot hand
     */
     void plotFingers3D(const std::vector<Grasp>& hand_list, const PointCloudRGBA::Ptr& cloud,
-      std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height) const;
+      std::string str, double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth) const;
 
 
 
@@ -181,7 +181,7 @@ class Plot
     * \param idx the ID of the grasp in the viewer
     */
     void plotHand3D(pcl::visualization::PCLVisualizer::Ptr& viewer, const Grasp& hand,
-      double outer_diameter, double finger_width, double hand_depth, double hand_height, int idx) const;
+      double outer_diameter, double finger_width, double hand_depth, double hand_height, double base_depth, double approach_depth, int idx) const;
 
     /**
     * \brief Plot a cube.
