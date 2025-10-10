@@ -29,21 +29,16 @@ generates 6-DOF grasp poses for a 2-finger grasp.
 
    ```
    $ cd <location_of_your_workspace>
-   $ git clone https://github.com/atenpas/gpg.git
+   $ git clone https://github.com/KaliberAI/gpg.git
    ```
 
 2. Build the project: 
 
    ```
-   $ cd grasp_candidates_generator
+   $ cd gpg
    $ mkdir build && cd build
    $ cmake ..
    $ make
-   ```
-
-3. (optional) Install the project:
-   ```
-   $ sudo make install
    ```
 
 
