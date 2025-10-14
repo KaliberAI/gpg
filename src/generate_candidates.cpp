@@ -151,10 +151,9 @@ if (candidates.empty()) {
   return (-1);
 }
 
-std::cout << "Saving " << candidates.size() << " grasp candidates to file...\n";
-
 // Check if output filename argument exists
 if (argc > 3) {
+  std::cout << "Saving " << candidates.size() << " grasp candidates to file...\n";
   Grasp::writeHandsToFile(argv[3], candidates);
 } else {
   std::cout << "No output filename provided. Skipping file save.\n";
